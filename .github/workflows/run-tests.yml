@@ -1,0 +1,99 @@
+name: Reusable PR Test Runner
+
+on:
+  workflow_call:
+
+jobs:
+  test:
+    runs-on: self-hosted
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout PR code
+        uses: actions/checkout@v4
+
+      - name: Detect stack
+        id: stack
+        run: |
+          if [ -f "pom.xml" ]; then
+            echo "type=java" >> $GITHUB_OUTPUT
+            echo "Stack: Java/Maven"
+          elif [ -f "requirements.txt" ]; then
+            echo "type=python" >> $GITHUB_OUTPUT
+            echo "Stack: Python (requirements.txt)"
+          elif [ -f "pyproject.toml" ]; then
+            echo "type=pyproject" >> $GITHUB_OUTPUT
+            echo "Stack: Python (pyproject.toml)"
+          elif [ -f "package.json" ]; then
+            echo "type=node" >> $GITHUB_OUTPUT
+            echo "Stack: Node.js"
+          else
+            echo "type=unknown" >> $GITHUB_OUTPUT
+            echo "No known stack detected"
+          fi
+
+      - name: Install Python deps (requirements.txt)
+        if: steps.stack.outputs.type == 'python'
+        run: |
+          python3 -m venv venv
+          source venv/bin/activate
+          pip install --upgrade pip --quiet
+          pip install -r requirements.txt --quiet
+          pip install pytest pytest-cov --quiet
+
+      - name: Run Python tests (requirements.txt)
+        if: steps.stack.outputs.type == 'python'
+        run: |
+          source venv/bin/activate
+          pytest --tb=short -v --junitxml=test-results.xml
+
+      - name: Install Python deps (pyproject.toml)
+        if: steps.stack.outputs.type == 'pyproject'
+        run: |
+          python3 -m venv venv
+          source venv/bin/activate
+          pip install --upgrade pip --quiet
+          pip install -e ".[test]" --quiet || pip install -e . --quiet
+          pip install pytest pytest-cov --quiet
+
+      - name: Run Python tests (pyproject.toml)
+        if: steps.stack.outputs.type == 'pyproject'
+        run: |
+          source venv/bin/activate
+          pytest --tb=short -v --junitxml=test-results.xml
+
+      - name: Run Java tests
+        if: steps.stack.outputs.type == 'java'
+        env:
+          JAVA_HOME: /usr/lib/jvm/java-21-openjdk-amd64
+        run: |
+          export PATH=$JAVA_HOME/bin:/opt/maven/bin:$PATH
+          mvn test -B
+
+      - name: Install Node deps
+        if: steps.stack.outputs.type == 'node'
+        run: npm ci --prefer-offline
+
+      - name: Run Node tests
+        if: steps.stack.outputs.type == 'node'
+        run: npm test
+
+      - name: No test runner found
+        if: steps.stack.outputs.type == 'unknown'
+        run: |
+          echo "No pom.xml/requirements.txt/pyproject.toml/package.json found"
+          echo "Skipping tests"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ github.run_id }}
+          path: |
+            test-results.xml
+            **/target/surefire-reports/*.xml
+          if-no-files-found: ignore
+
+      - name: Cleanup
+        if: always()
+        run: rm -rf venv node_modules || true
