@@ -70,9 +70,12 @@ jobs:
         if: steps.stack.outputs.type == 'java'
         env:
           JAVA_HOME: /usr/lib/jvm/java-21-openjdk-amd64
+          NEXUS_USERNAME: ${{ secrets.NEXUS_USERNAME }}
+          NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
         run: |
           export PATH=$JAVA_HOME/bin:/opt/maven/bin:$PATH
-          mvn test -B
+          mvn test -B \
+            -Dorg.slf4j.simpleLogger.defaultLogLevel=warn
 
       - name: Install Node deps
         if: steps.stack.outputs.type == 'node'
