@@ -11,8 +11,6 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: read
-      checks: write
-      statuses: write
     
     steps:
       - name: Checkout PR code
