@@ -1,13 +1,19 @@
 name: Reusable PR Test Runner
-
 on:
   workflow_call:
+    secrets:
+      GH_TOKEN:
+        required: false
 
 jobs:
   test:
     runs-on: self-hosted
     timeout-minutes: 20
-
+    permissions:
+      contents: read
+      checks: write
+      statuses: write
+    
     steps:
       - name: Checkout PR code
         uses: actions/checkout@v4
@@ -87,6 +93,8 @@ jobs:
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
         with:
           name: test-results-${{ github.run_id }}
           path: |
