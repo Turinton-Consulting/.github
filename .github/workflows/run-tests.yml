@@ -136,6 +136,10 @@ jobs:
         if: steps.stack.outputs.type == 'node'
         run: npm ci --prefer-offline
 
+      - name: Build Node 
+        if: steps.stack.outputs.type == 'node'
+        run: npm build
+
       - name: Run Node tests
         if: steps.stack.outputs.type == 'node'
         run: npm test
