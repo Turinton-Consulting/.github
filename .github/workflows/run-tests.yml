@@ -38,11 +38,24 @@ jobs:
 
       - name: Install Python deps (requirements.txt)
         if: steps.stack.outputs.type == 'python'
+        env:
+          NEXUS_USERNAME: ${{ secrets.NEXUS_USERNAME }}
+          NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
         run: |
+          # Create pip.conf for Nexus PyPI
+          mkdir -p ~/.pip
+          cat > ~/.pip/pip.conf << 'EOF'
+          [global]
+          index-url = https://nexus.turinton.ai/repository/pypi-group/simple
+          index = https://nexus.turinton.ai/repository/pypi-group/simple
+          trusted-host = nexus.turinton.ai
+          EOF
+          
           python3 -m venv venv
           source venv/bin/activate
           pip install --upgrade pip --quiet
-          pip install -r requirements.txt --quiet
+          pip install -r requirements.txt --quiet \
+            --index-url https://${NEXUS_USERNAME}:${NEXUS_PASSWORD}@nexus.turinton.ai/repository/pypi-group/simple
           pip install pytest pytest-cov --quiet
 
       - name: Run Python tests (requirements.txt)
@@ -53,11 +66,24 @@ jobs:
 
       - name: Install Python deps (pyproject.toml)
         if: steps.stack.outputs.type == 'pyproject'
+        env:
+          NEXUS_USERNAME: ${{ secrets.NEXUS_USERNAME }}
+          NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
         run: |
+          # Create pip.conf for Nexus PyPI
+          mkdir -p ~/.pip
+          cat > ~/.pip/pip.conf << 'EOF'
+          [global]
+          index-url = https://nexus.turinton.ai/repository/pypi-group/simple
+          index = https://nexus.turinton.ai/repository/pypi-group/simple
+          trusted-host = nexus.turinton.ai
+          EOF
+          
           python3 -m venv venv
           source venv/bin/activate
           pip install --upgrade pip --quiet
-          pip install -e ".[test]" --quiet || pip install -e . --quiet
+          pip install -e ".[test]" --quiet || pip install -e . --quiet \
+            --index-url https://${NEXUS_USERNAME}:${NEXUS_PASSWORD}@nexus.turinton.ai/repository/pypi-group/simple
           pip install pytest pytest-cov --quiet
 
       - name: Run Python tests (pyproject.toml)
@@ -73,8 +99,64 @@ jobs:
           NEXUS_USERNAME: ${{ secrets.NEXUS_USERNAME }}
           NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
         run: |
+          # Create Maven settings.xml with Nexus configuration
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml << 'EOF'
+          <settings>
+            <servers>
+              <server>
+                <id>maven-public</id>
+                <username>${env.NEXUS_USERNAME}</username>
+                <password>${env.NEXUS_PASSWORD}</password>
+              </server>
+              <server>
+                <id>turinton-releases</id>
+                <username>${env.NEXUS_USERNAME}</username>
+                <password>${env.NEXUS_PASSWORD}</password>
+              </server>
+            </servers>
+            <mirrors>
+              <mirror>
+                <id>nexus-all</id>
+                <mirrorOf>*</mirrorOf>
+                <url>https://nexus.turinton.ai/repository/maven-public</url>
+              </mirror>
+            </mirrors>
+            <profiles>
+              <profile>
+                <id>nexus</id>
+                <repositories>
+                  <repository>
+                    <id>maven-public</id>
+                    <url>https://nexus.turinton.ai/repository/maven-public</url>
+                    <releases>
+                      <enabled>true</enabled>
+                    </releases>
+                    <snapshots>
+                      <enabled>true</enabled>
+                    </snapshots>
+                  </repository>
+                  <repository>
+                    <id>turinton-releases</id>
+                    <url>https://nexus.turinton.ai/repository/turinton-releases</url>
+                    <releases>
+                      <enabled>true</enabled>
+                    </releases>
+                    <snapshots>
+                      <enabled>false</enabled>
+                    </snapshots>
+                  </repository>
+                </repositories>
+              </profile>
+            </profiles>
+            <activeProfiles>
+              <activeProfile>nexus</activeProfile>
+            </activeProfiles>
+          </settings>
+          EOF
+          
           export PATH=$JAVA_HOME/bin:/opt/maven/bin:$PATH
-          mvn test -B \
+          mvn test -B -U \
             -Dorg.slf4j.simpleLogger.defaultLogLevel=warn
 
       - name: Install Node deps
