@@ -103,9 +103,16 @@ jobs:
           mkdir -p ~/.m2
           cat > ~/.m2/settings.xml << 'EOF'
           <settings>
+            <mirrors>
+              <mirror>
+                <id>nexus</id>
+                <mirrorOf>*</mirrorOf>
+                <url>https://nexus.turinton.ai/repository/maven-public/</url>
+              </mirror>
+            </mirrors>
             <servers>
               <server>
-                <id>maven-public</id>
+                <id>nexus</id>
                 <username>${env.NEXUS_USERNAME}</username>
                 <password>${env.NEXUS_PASSWORD}</password>
               </server>
@@ -115,43 +122,6 @@ jobs:
                 <password>${env.NEXUS_PASSWORD}</password>
               </server>
             </servers>
-            <mirrors>
-              <mirror>
-                <id>nexus-all</id>
-                <mirrorOf>*</mirrorOf>
-                <url>https://nexus.turinton.ai/repository/maven-public</url>
-              </mirror>
-            </mirrors>
-            <profiles>
-              <profile>
-                <id>nexus</id>
-                <repositories>
-                  <repository>
-                    <id>maven-public</id>
-                    <url>https://nexus.turinton.ai/repository/maven-public</url>
-                    <releases>
-                      <enabled>true</enabled>
-                    </releases>
-                    <snapshots>
-                      <enabled>true</enabled>
-                    </snapshots>
-                  </repository>
-                  <repository>
-                    <id>turinton-releases</id>
-                    <url>https://nexus.turinton.ai/repository/turinton-releases</url>
-                    <releases>
-                      <enabled>true</enabled>
-                    </releases>
-                    <snapshots>
-                      <enabled>false</enabled>
-                    </snapshots>
-                  </repository>
-                </repositories>
-              </profile>
-            </profiles>
-            <activeProfiles>
-              <activeProfile>nexus</activeProfile>
-            </activeProfiles>
           </settings>
           EOF
           
