@@ -4,7 +4,10 @@ on:
     secrets:
       GH_TOKEN:
         required: false
-
+      NEXUS_USERNAME:
+        required: false
+      NEXUS_PASSWORD:
+        required: false
 jobs:
   test:
     runs-on: self-hosted
