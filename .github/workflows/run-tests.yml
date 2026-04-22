@@ -138,7 +138,7 @@ jobs:
 
       - name: Build Node 
         if: steps.stack.outputs.type == 'node'
-        run: npm build
+        run: npm run build
 
       - name: Run Node tests
         if: steps.stack.outputs.type == 'node'
