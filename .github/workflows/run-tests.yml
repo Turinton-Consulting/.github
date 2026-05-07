@@ -41,24 +41,11 @@ jobs:
 
       - name: Install Python deps (requirements.txt)
         if: steps.stack.outputs.type == 'python'
-        env:
-          NEXUS_USERNAME: ${{ secrets.NEXUS_USERNAME }}
-          NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
         run: |
-          # Create pip.conf for Nexus PyPI
-          mkdir -p ~/.pip
-          cat > ~/.pip/pip.conf << 'EOF'
-          [global]
-          index-url = https://nexus.turinton.ai/repository/pypi-group/simple
-          index = https://nexus.turinton.ai/repository/pypi-group/simple
-          trusted-host = nexus.turinton.ai
-          EOF
-          
           python3 -m venv venv
           source venv/bin/activate
           pip install --upgrade pip --quiet
-          pip install -r requirements.txt --quiet \
-            --index-url https://${NEXUS_USERNAME}:${NEXUS_PASSWORD}@nexus.turinton.ai/repository/pypi-group/simple
+          pip install -r requirements.txt --quiet
           pip install pytest pytest-cov --quiet
 
       - name: Run Python tests (requirements.txt)
@@ -69,24 +56,11 @@ jobs:
 
       - name: Install Python deps (pyproject.toml)
         if: steps.stack.outputs.type == 'pyproject'
-        env:
-          NEXUS_USERNAME: ${{ secrets.NEXUS_USERNAME }}
-          NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
         run: |
-          # Create pip.conf for Nexus PyPI
-          mkdir -p ~/.pip
-          cat > ~/.pip/pip.conf << 'EOF'
-          [global]
-          index-url = https://nexus.turinton.ai/repository/pypi-group/simple
-          index = https://nexus.turinton.ai/repository/pypi-group/simple
-          trusted-host = nexus.turinton.ai
-          EOF
-          
           python3 -m venv venv
           source venv/bin/activate
           pip install --upgrade pip --quiet
-          pip install -e ".[test]" --quiet || pip install -e . --quiet \
-            --index-url https://${NEXUS_USERNAME}:${NEXUS_PASSWORD}@nexus.turinton.ai/repository/pypi-group/simple
+          pip install -e ".[test]" --quiet || pip install -e . --quiet
           pip install pytest pytest-cov --quiet
 
       - name: Run Python tests (pyproject.toml)
