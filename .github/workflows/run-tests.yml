@@ -55,8 +55,11 @@ jobs:
           # Use Nexus if credentials are provided, otherwise default to public PyPI
           if [ -n "${NEXUS_USERNAME}" ] && [ -n "${NEXUS_PASSWORD}" ]; then
             echo "Installing from Nexus registry"
+            # URL-encode credentials via env vars to safely handle special characters
+            ENCODED_USER=$(python3 -c "import urllib.parse, os; print(urllib.parse.quote(os.environ['NEXUS_USERNAME'], safe=''))")
+            ENCODED_PASS=$(python3 -c "import urllib.parse, os; print(urllib.parse.quote(os.environ['NEXUS_PASSWORD'], safe=''))")
             pip install -r requirements.txt --quiet \
-              --index-url "https://${NEXUS_USERNAME}:${NEXUS_PASSWORD}@nexus.turinton.ai/repository/pypi-group/simple" \
+              --index-url "https://${ENCODED_USER}:${ENCODED_PASS}@nexus.turinton.ai/repository/pypi-group/simple" \
               --trusted-host nexus.turinton.ai
           else
             echo "Installing from public PyPI"
@@ -87,8 +90,11 @@ jobs:
           # Use Nexus if credentials are provided, otherwise default to public PyPI
           if [ -n "${NEXUS_USERNAME}" ] && [ -n "${NEXUS_PASSWORD}" ]; then
             echo "Installing from Nexus registry"
+            # URL-encode credentials via env vars to safely handle special characters
+            ENCODED_USER=$(python3 -c "import urllib.parse, os; print(urllib.parse.quote(os.environ['NEXUS_USERNAME'], safe=''))")
+            ENCODED_PASS=$(python3 -c "import urllib.parse, os; print(urllib.parse.quote(os.environ['NEXUS_PASSWORD'], safe=''))")
             pip install -e ".[test]" --quiet || pip install -e . --quiet \
-              --index-url "https://${NEXUS_USERNAME}:${NEXUS_PASSWORD}@nexus.turinton.ai/repository/pypi-group/simple" \
+              --index-url "https://${ENCODED_USER}:${ENCODED_PASS}@nexus.turinton.ai/repository/pypi-group/simple" \
               --trusted-host nexus.turinton.ai
           else
             echo "Installing from public PyPI"
