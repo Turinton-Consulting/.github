@@ -41,11 +41,28 @@ jobs:
 
       - name: Install Python deps (requirements.txt)
         if: steps.stack.outputs.type == 'python'
+        env:
+          NEXUS_USERNAME: ${{ secrets.NEXUS_USERNAME }}
+          NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
         run: |
+          # Clear any stale pip config from previous runs on self-hosted runner
+          rm -f ~/.pip/pip.conf ~/.config/pip/pip.conf
+
           python3 -m venv venv
           source venv/bin/activate
           pip install --upgrade pip --quiet
-          pip install -r requirements.txt --quiet
+
+          # Use Nexus if credentials are provided, otherwise default to public PyPI
+          if [ -n "${NEXUS_USERNAME}" ] && [ -n "${NEXUS_PASSWORD}" ]; then
+            echo "Installing from Nexus registry"
+            pip install -r requirements.txt --quiet \
+              --index-url "https://${NEXUS_USERNAME}:${NEXUS_PASSWORD}@nexus.turinton.ai/repository/pypi-group/simple" \
+              --trusted-host nexus.turinton.ai
+          else
+            echo "Installing from public PyPI"
+            pip install -r requirements.txt --quiet
+          fi
+
           pip install pytest pytest-cov --quiet
 
       - name: Run Python tests (requirements.txt)
@@ -56,11 +73,28 @@ jobs:
 
       - name: Install Python deps (pyproject.toml)
         if: steps.stack.outputs.type == 'pyproject'
+        env:
+          NEXUS_USERNAME: ${{ secrets.NEXUS_USERNAME }}
+          NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
         run: |
+          # Clear any stale pip config from previous runs on self-hosted runner
+          rm -f ~/.pip/pip.conf ~/.config/pip/pip.conf
+
           python3 -m venv venv
           source venv/bin/activate
           pip install --upgrade pip --quiet
-          pip install -e ".[test]" --quiet || pip install -e . --quiet
+
+          # Use Nexus if credentials are provided, otherwise default to public PyPI
+          if [ -n "${NEXUS_USERNAME}" ] && [ -n "${NEXUS_PASSWORD}" ]; then
+            echo "Installing from Nexus registry"
+            pip install -e ".[test]" --quiet || pip install -e . --quiet \
+              --index-url "https://${NEXUS_USERNAME}:${NEXUS_PASSWORD}@nexus.turinton.ai/repository/pypi-group/simple" \
+              --trusted-host nexus.turinton.ai
+          else
+            echo "Installing from public PyPI"
+            pip install -e ".[test]" --quiet || pip install -e . --quiet
+          fi
+
           pip install pytest pytest-cov --quiet
 
       - name: Run Python tests (pyproject.toml)
